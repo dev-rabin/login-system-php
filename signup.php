@@ -1,18 +1,36 @@
 <?php
 include("partials/_dbConnect.php");
 
-if($_SERVER["REQUEST_METHOD"] == "POST") {
-$email = $_POST["email"];
-$password = $_POST["password"];
-$cpassword = $_POST["cpassword"];
+if ($_SERVER["REQUEST_METHOD"] == "POST") {
+    $email = $_POST["email"];
+    $password = $_POST["password"];
+    $cpassword = $_POST["cpassword"];
 
-$sql = "INSERT INTO `users` (`email`, `password`, `time`) VALUES ('$email','$password', current_timestamp());";
+    // Check if passwords match
+    if ($password !== $cpassword) {
+        die("Passwords do not match!");
+    }
 
-echo $sql;
-$result = mysqli_query($conn, $sql);
+    // Hash the password
+    $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
+
+    // Prepared statement to prevent SQL injection
+    $sql = "INSERT INTO `users` (`email`, `password`, `time`) VALUES (?, ?, current_timestamp())";
+    
+    $stmt = mysqli_prepare($conn, $sql);
+    mysqli_stmt_bind_param($stmt, "ss", $email, $hashedPassword);
+    mysqli_stmt_execute($stmt);
+
+    if (!$stmt) {
+        die("Data not uploaded!");
+    } else {
+        echo "Uploaded Successfully!";
+    }
+
+    mysqli_stmt_close($stmt);
 }
-
 ?>
+
 <!DOCTYPE html>
 <html lang="en">
 
@@ -31,7 +49,7 @@ $result = mysqli_query($conn, $sql);
     <?php require "./partials/_nav.php" ?>
     <div class="container my-4 ">
         <h1 class="text-center">Register here</h1>
-        <form action="index.php" method="post">
+        <form action="signup.php" method="post">
             <div class="mb-3">
                 <label for="exampleInputEmail1" class="form-label">Email address</label>
                 <input type="email" class="form-control" id="email" aria-describedby="emailHelp" name="email">
